@@ -14,9 +14,7 @@ class NetFrame:
 
         self.dataframe = dataframe
         self.graph = Graph()
-        self.nodes = dict()
         self.node_map = NodeMap()
-        self.edges = dict()
         self.edge_map = EdgeMap()
 
     @staticmethod
@@ -29,16 +27,6 @@ class NetFrame:
             nodes = list(set([node for node in list(dataframe[col_name])]))
 
         return nodes
-
-    def create_groups(self, group_col: str):
-        """
-        Create groups for color
-
-        :param group_col: str
-        :return:
-        """
-
-        return self.get_values(self.dataframe, group_col)
 
     def create_nodes(self, cols: list, ignore_chars: str) -> list:
         """
@@ -101,14 +89,6 @@ class NetFrame:
             # set nodes in map
             self.node_map.set_map(nodes)
 
-            for node in nodes:
-                entry = dict(id=node, group=1)
-                format_nodes.append(entry)
-
-        self.nodes.update({
-            'nodes': format_nodes
-        })
-
     def create_edges(self, cols: List[Tuple], ignore_chars: str = None) -> list:
         """
         format edges
@@ -132,7 +112,6 @@ class NetFrame:
 
         :param cols:
         :param ignore_chars:
-        :return:
         """
 
         links = list()
@@ -142,26 +121,39 @@ class NetFrame:
 
             self.edge_map.set_map(edges)
 
-            for edge in edges:
-                entry = dict(source=edge[0], target=edge[1], value=1)
-                links.append(entry)
-
-            self.edges.update({
-                'links': links
-            })
-
-    def json_model(self) -> dict:
+    def to_json(self) -> dict:
         """
         merge links and edges
 
         :return: dict
         """
 
-        return {**self.nodes, **self.edges}
+        nodes = dict()
+        format_nodes = list()
+        edges = dict()
+        links = list()
+
+        for node in self.node_map.map.keys():
+            entry = dict(id=node, group=1)
+            format_nodes.append(entry)
+
+        nodes.update({
+            'nodes': format_nodes
+        })
+
+        for edge in self.edge_map.map.keys():
+            entry = dict(source=edge[0], target=edge[1], value=1)
+            links.append(entry)
+
+        edges.update({
+            'links': links
+        })
+
+        return {**nodes, **edges}
 
     def populate_network(self) -> None:
         """
-        Create NetworkX Graph from JSON data
+        Create NetworkX Graph from Node and Edge Maps
 
         :return:
         """
@@ -193,3 +185,5 @@ class NetFrame:
                 self.node_map.map[key]['attributes'].update({
                     type_: value
                 })
+
+

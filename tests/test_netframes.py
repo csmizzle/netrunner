@@ -10,19 +10,17 @@ nf = NetFrame(df)
 def test_node_parsing():
     col_to_parse = ['Name', 'Allegiances']
     nf.format_nodes(col_to_parse, ignore_chars='None')
-    nodes = nf.nodes
-    assert isinstance(nodes, dict)
+    nodes = nf.to_json()['nodes']
+    assert isinstance(nodes, list)
     assert len(nodes) > 0
-    assert 'nodes' in nodes.keys()
 
 
 def test_edge_parsing():
     cols_to_edges = [('Name', 'Allegiances')]
     nf.format_edges(cols_to_edges)
-    edges = nf.edges
-    assert isinstance(edges, dict)
+    edges = nf.to_json()['links']
+    assert isinstance(edges, list)
     assert len(edges) > 0
-    assert 'links' in edges.keys()
 
 
 def test_merge_dicts():
@@ -30,7 +28,7 @@ def test_merge_dicts():
     cols_to_edges = [('Name', 'Allegiances')]
     nf.format_nodes(col_to_parse, ignore_chars='None')
     nf.format_edges(cols_to_edges)
-    json = nf.json_model()
+    json = nf.to_json()
     assert isinstance(json, dict)
     assert 'nodes' and 'links' in json.keys()
 
@@ -71,3 +69,9 @@ def test_update_node_map():
 
     for node in nf.node_map.map.keys():
         assert 'degree' and 'between' in nf.node_map.map[node]['attributes'].keys()
+
+    nf.update_node_map(networkx.eigenvector_centrality(nf.graph), 'eigenvector')
+
+    for node in nf.node_map.map.keys():
+        assert 'degree' and 'between' and 'eigenvector' in nf.node_map.map[node]['attributes'].keys()
+
