@@ -1,4 +1,4 @@
-from alfred.netframe import NetFrame, NodeMap, EdgeMap
+from netrunner.netframe import NetFrame, NodeMap, EdgeMap
 import pandas as pd
 import networkx
 from networkx import Graph
