@@ -74,4 +74,3 @@ def test_update_node_map():
 
     for node in nf.node_map.map.keys():
         assert 'degree' and 'between' and 'eigenvector' in nf.node_map.map[node]['attributes'].keys()
-
