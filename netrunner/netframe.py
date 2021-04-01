@@ -1,21 +1,34 @@
 from networkx import Graph
 from networkx.classes.reportviews import DegreeView
-from .models import NodeMap, EdgeMap
-from typing import List, Tuple, Iterable, Dict
+from netrunner.models import NodeMap, EdgeMap
+from typing import List, Tuple, Iterable
+import pandas as pd
 from pandas.core.frame import DataFrame
 
 
 class NetFrame:
 
-    def __init__(self, dataframe: DataFrame):
+    def __init__(self, dataframe: DataFrame, nodes: List[str] = None,
+                 links: List[tuple] = None, ignore_chars: str = None):
 
         # TODO: add edge map updates
         # TODO: update json output based on attributes
+        # TODO: edge attributes
 
-        self.dataframe = dataframe
-        self.graph = Graph()
+        self.frame = dataframe
+        self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
+
+        # parse optional input params and create network if both present
+        if nodes:
+            self.add_nodes(cols=nodes, ignore_chars=ignore_chars)
+
+        if links:
+            self.add_edges(cols=links, ignore_chars=ignore_chars)
+
+        if nodes and links:
+            self.populate_network()
 
     @staticmethod
     def get_values(dataframe, col_name: str, ignore_chars: str) -> list:
@@ -34,14 +47,14 @@ class NetFrame:
 
         :param cols: list
         :param ignore_chars: str
-        :return:
+        :return: list
         """
 
         all_nodes = list()
 
         for col in cols:
 
-            nodes = self.get_values(self.dataframe, col, ignore_chars)
+            nodes = self.get_values(self.frame, col, ignore_chars)
 
             all_nodes.extend(nodes)
 
@@ -52,10 +65,10 @@ class NetFrame:
         """
         Get relationships
 
-        :param dataframe:
-        :param target_col:
-        :param source_col:
-        :param ignore_str:
+        :param dataframe: DataFrame
+        :param target_col: str
+        :param source_col: str
+        :param ignore_str: str
         :return: list
         """
 
@@ -70,7 +83,7 @@ class NetFrame:
             list(dataframe[target_col])
         ))
 
-    def format_nodes(self, cols: list, ignore_chars: str = None) -> None:
+    def add_nodes(self, cols: list, ignore_chars: str = None) -> None:
         """
         format nodes for visualization
 
@@ -81,13 +94,12 @@ class NetFrame:
 
         # TODO: add groups
 
-        format_nodes = list()
         nodes = self.create_nodes(cols, ignore_chars)
 
         if len(nodes) > 0:
 
             # set nodes in map
-            self.node_map.set_map(nodes)
+            self.node_map.update(nodes)
 
     def create_edges(self, cols: List[Tuple], ignore_chars: str = None) -> list:
         """
@@ -101,12 +113,12 @@ class NetFrame:
         all_edges = list()
 
         for col in cols:
-            edges = self.get_edges(self.dataframe, col[0], col[1], ignore_chars)
+            edges = self.get_edges(self.frame, col[0], col[1], ignore_chars)
             all_edges.extend(edges)
 
         return all_edges
 
-    def format_edges(self, cols: List[Tuple], ignore_chars: str = None) -> None:
+    def add_edges(self, cols: List[Tuple], ignore_chars: str = None) -> None:
         """
         Store edges for visualization
 
@@ -114,12 +126,10 @@ class NetFrame:
         :param ignore_chars:
         """
 
-        links = list()
         edges = self.create_edges(cols, ignore_chars)
 
         if len(edges) > 0:
-
-            self.edge_map.set_map(edges)
+            self.edge_map.update(edges)
 
     def to_json(self) -> dict:
         """
@@ -160,8 +170,8 @@ class NetFrame:
 
         nodes = [node for node in self.node_map.map.keys()]
         edges = [(edge[0], edge[1]) for edge in self.edge_map.map.keys()]
-        self.graph.add_nodes_from(nodes)
-        self.graph.add_edges_from(edges)
+        self.net.add_nodes_from(nodes)
+        self.net.add_edges_from(edges)
 
     def update_node_map(self, values: Iterable, type_: str) -> None:
         """
@@ -186,4 +196,50 @@ class NetFrame:
                     type_: value
                 })
 
+        if isinstance(values, list):
 
+            # communities come back in frozen sets in networkX
+            for idx, value in enumerate(values):
+
+                if isinstance(value, frozenset):
+
+                    for entity in value:
+
+                        self.node_map.map[entity]['attributes'].update({
+                            type_: idx
+                        })
+
+    def join_graph(self, netframe) -> None:
+        """
+        Join two NetFrames together into current NetFrame
+
+        :param netframe: NetFrame to join on
+
+        """
+
+        # join graphs and flush stats based on old net
+        nodes = set(list(netframe.node_map.map.keys()) + list(self.node_map.map.keys()))
+        edges = list(netframe.edge_map.map.keys()) + list(self.edge_map.map.keys())
+
+        # flush and update
+        self.node_map.flush()
+        self.node_map.update(nodes)
+        self.edge_map.flush()
+        self.edge_map.update(edges)
+
+        # repopulate network
+        self.populate_network()
+
+    def join_all(self, netframe, left_on: str, right_on: str,  how: str = 'left') -> None:
+        """
+        Join both graph and dataframe together on single column
+
+        :param netframe: NetFrame
+        :param left_on: str
+        :param right_on: str
+        :param how: str
+        """
+
+        self.frame = pd.merge(left=self.frame, right=netframe.frame,
+                              left_on=left_on, right_on=right_on, how=how)
+        self.join_graph(netframe)
