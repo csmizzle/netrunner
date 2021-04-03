@@ -4,3 +4,5 @@
 /data
 /notebooks
 .idea/*
+flask_app/assests/node_modules
+flask_app/assests/dist

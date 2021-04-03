@@ -2,6 +2,7 @@
 Custom models for NetFrames
 
 """
+import numpy as np
 
 
 class NodeMap:
@@ -16,7 +17,8 @@ class NodeMap:
         :return:
         """
 
-        self.map = {node: {'attributes': {}} for node in nodes if node not in self.map.keys()}
+        self.map = {node: {'attributes': {}}
+                    for node in nodes if node not in self.map.keys()}
 
     def flush(self) -> None:
         """

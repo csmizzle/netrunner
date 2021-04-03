@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Column Creation</title>
+</head>
+<body>
+    <div>
+        {% for column in df.columns %}
+            <p>Column: {{ column }}</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

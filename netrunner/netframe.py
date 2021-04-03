@@ -15,7 +15,7 @@ class NetFrame:
         # TODO: update json output based on attributes
         # TODO: edge attributes
 
-        self.frame = dataframe
+        self.frame = dataframe.fillna('None')
         self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
