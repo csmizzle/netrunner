@@ -2,7 +2,6 @@ from netrunner.netframe import NetFrame
 from flask import Flask, render_template
 import pandas as pd
 import json
-import numpy as np
 
 app = Flask(__name__)
 
