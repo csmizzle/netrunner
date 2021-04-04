@@ -1,9 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Column Creation</title>
-</head>
+{% extends "base.html" %}
+{% block content %}
 <body>
     <div>
         {% for column in df.columns %}
@@ -11,4 +7,4 @@
         {% endfor %}
     </div>
 </body>
-</html>
+{% endblock %}

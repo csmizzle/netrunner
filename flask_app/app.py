@@ -14,7 +14,7 @@ nf = NetFrame(df, nodes=nodes_cols, links=cols_to_edges)
 
 @app.route('/')
 def landing():
-    return 'Welcome to Netrunner!'
+    return render_template("home.html")
 
 
 @app.route('/get_columns')

@@ -1,24 +1,36 @@
+{% extends "base.html" %}
 <!DOCTYPE html>
+{% block content %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Network</title>
     <script src="//unpkg.com/3d-force-graph"></script>
 </head>
 <body>
+    <div class="container" style="padding: 5px 10px">
+        <form role="form">
+            <div class="form-group">
+                <input type="input" class="form-control input-lg" id="txt-search" placeholder="Search your nodes">
+            </div>
+        </form>
+    </div>
     <div id="3d-graph"></div>
-    <script type="module">
-        const gData = JSON.parse({{ json_data|tojson }})
-        const Graph = ForceGraph3D()
-            (document.getElementById('3d-graph'))
-                .graphData(gData)
-                .nodeLabel('id')
-                .nodeAutoColorBy('group')
-                .onNodeDragEnd(node => {
-                    node.fx = node.x;
-                    node.fy = node.y;
-                    node.fz = node.z;
-                })
-    </script>
+    {% block javascript %}
+        <script type="module">
+            const gData = JSON.parse({{ json_data|tojson }})
+            console.log(gData)
+            const Graph = ForceGraph3D()
+                (document.getElementById('3d-graph'))
+                    .graphData(gData)
+                    .nodeLabel('id')
+                    .nodeAutoColorBy('group')
+                    .onNodeDragEnd(node => {
+                        node.fx = node.x;
+                        node.fy = node.y;
+                        node.fz = node.z;
+                    })
+        </script>
+    {% endblock %}
 </body>
 </html>
+{% endblock %}
