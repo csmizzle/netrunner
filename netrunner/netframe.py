@@ -14,11 +14,15 @@ class NetFrame:
         # TODO: add edge map updates
         # TODO: update json output based on attributes
         # TODO: edge attributes
+        # TODO: Delete nodes and edges
+        # TODO: if dataframe changes, give ability to propagate changes to network
 
         self.frame = dataframe.fillna('None')
         self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
+        self._node_columns = list()
+        self._edges = list()
 
         # parse optional input params and create network if both present
         if nodes:
@@ -31,7 +35,7 @@ class NetFrame:
             self.populate_network()
 
     @staticmethod
-    def get_values(dataframe, col_name: str, ignore_chars: str) -> list:
+    def _get_values(dataframe, col_name: str, ignore_chars: str) -> list:
 
         if ignore_chars:
             nodes = list(set([node for node in list(dataframe[col_name]) if str(node) != ignore_chars]))
@@ -41,7 +45,7 @@ class NetFrame:
 
         return nodes
 
-    def create_nodes(self, cols: list, ignore_chars: str) -> list:
+    def _create_nodes(self, cols: list, ignore_chars: str) -> list:
         """
         Iterate and creat all nodes given column names
 
@@ -54,14 +58,16 @@ class NetFrame:
 
         for col in cols:
 
-            nodes = self.get_values(self.frame, col, ignore_chars)
+            nodes = self._get_values(self.frame, col, ignore_chars)
 
+            # update node cols and create list of nodes for network
+            self._node_columns.append(col)
             all_nodes.extend(nodes)
 
         return all_nodes
 
     @staticmethod
-    def get_edges(dataframe: DataFrame, target_col: str, source_col: str, ignore_str: str = None) -> list:
+    def _get_edges(dataframe: DataFrame, target_col: str, source_col: str, ignore_str: str = None) -> list:
         """
         Get relationships
 
@@ -92,16 +98,14 @@ class NetFrame:
 
         """
 
-        # TODO: add groups
-
-        nodes = self.create_nodes(cols, ignore_chars)
+        nodes = self._create_nodes(cols, ignore_chars)
 
         if len(nodes) > 0:
 
             # set nodes in map
             self.node_map.update(nodes)
 
-    def create_edges(self, cols: List[Tuple], ignore_chars: str = None) -> list:
+    def _create_edges(self, cols: List[Tuple], ignore_chars: str = None) -> list:
         """
         format edges
 
@@ -113,7 +117,10 @@ class NetFrame:
         all_edges = list()
 
         for col in cols:
-            edges = self.get_edges(self.frame, col[0], col[1], ignore_chars)
+            edges = self._get_edges(self.frame, col[0], col[1], ignore_chars)
+
+            # update edges map and edges for network
+            self._edges.append(col)
             all_edges.extend(edges)
 
         return all_edges
@@ -126,7 +133,7 @@ class NetFrame:
         :param ignore_chars:
         """
 
-        edges = self.create_edges(cols, ignore_chars)
+        edges = self._create_edges(cols, ignore_chars)
 
         if len(edges) > 0:
             self.edge_map.update(edges)
@@ -221,7 +228,7 @@ class NetFrame:
         nodes = set(list(netframe.node_map.map.keys()) + list(self.node_map.map.keys()))
         edges = list(netframe.edge_map.map.keys()) + list(self.edge_map.map.keys())
 
-        # flush and update
+        # flush and update nodes and edges
         self.node_map.flush()
         self.node_map.update(nodes)
         self.edge_map.flush()
@@ -240,6 +247,5 @@ class NetFrame:
         :param how: str
         """
 
-        self.frame = pd.merge(left=self.frame, right=netframe.frame,
-                              left_on=left_on, right_on=right_on, how=how)
+        self.frame = pd.merge(left=self.frame, right=netframe.frame, left_on=left_on, right_on=right_on, how=how)
         self.join_graph(netframe)

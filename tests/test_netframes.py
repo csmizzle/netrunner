@@ -1,18 +1,17 @@
-from netrunner.netframe import *
+import netrunner as nr
+from netrunner.models import NodeMap, EdgeMap
 import networkx
 from networkx import Graph
 from networkx.algorithms import community
 
 # set up test networks
-df = pd.read_csv('../data/character-deaths.csv')
-nodes_ = ['Name', 'Allegiances']
-links_ = [('Name', 'Allegiances')]
-nf = NetFrame(df, nodes=nodes_, links=links_)
+nf = nr.read_csv('../data/character-deaths.csv',
+                 nodes=['Name', 'Allegiances'],
+                 links=[('Name', 'Allegiances')])
 
-df2 = pd.read_csv('../data/battles.csv')
-nodes_cols = ['name', 'attacker_king', 'defender_king']
-cols_to_edges = [('name', 'attacker_king'), ('name', 'defender_king')]
-nf2 = NetFrame(df2, nodes=nodes_cols, links=cols_to_edges)
+nf2 = nr.read_csv('../data/battles.csv',
+                  nodes=['name', 'attacker_king', 'defender_king'],
+                  links=[('name', 'attacker_king'), ('name', 'defender_king')])
 
 
 def test_node_parsing():

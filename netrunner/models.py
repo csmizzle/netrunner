@@ -2,12 +2,11 @@
 Custom models for NetFrames
 
 """
-import numpy as np
 
 
 class NodeMap:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.map = dict()
 
     def update(self, nodes) -> None:
@@ -31,7 +30,7 @@ class NodeMap:
 
 class EdgeMap:
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         # TODO: Allow for multiple edges with same source/target mapping
         # - this can be done with lists under the source/target key
