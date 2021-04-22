@@ -2,8 +2,10 @@
 Custom models for NetFrames
 
 """
+from collections import namedtuple
 
 
+# NetFrame Models
 class NodeMap:
 
     def __init__(self) -> None:
@@ -52,3 +54,7 @@ class EdgeMap:
         """
 
         self.map = dict()
+
+
+# Utility Models
+DrawResults = namedtuple('DrawResults', ['nodes', 'links'])

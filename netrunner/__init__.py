@@ -4,6 +4,7 @@ Access Netrunner from top level init
 """
 
 from netrunner.netframe import NetFrame, pd
+from netrunner.utils import evaluate_draw
 from typing import List, Tuple
 
 
@@ -35,33 +36,8 @@ def read_csv(path: str,
 
     if not nodes or not links:
 
-        # evaluate user input on network creation
-        if not draw:
-            answer = input('Do you wish to format your network now? Y/N ')
-
-        else:
-
-            if draw == 'y':
-                answer = 'y'
-
-            else:
-                answer = 'n'
-
-        if answer.lower() == 'y':
-
-            if not nodes:
-                print("[*] Let's select which columns you want to use as nodes first ...")
-                print('---DataFrame information---')
-                print(df.info())
-                print('---DataFrame Columns---\n', ', '.join(df.columns).strip(', '))
-                nodes = input('[!] Enter Node Columns (separated by commas please)\n')
-                nodes = nodes.split(', ')
-
-            if not links:
-                print("[*] Next, let's decide which columns you want to link together with edges.")
-                print('[?] Nodes:', ', '.join(nodes))
-                links = input('[!] Enter Links (node_1 -> node_2, node_2 -> node_3)\n')
-                links = [(rel.split(' -> ')[0], rel.split(' -> ')[1]) for rel in links.split(', ')]
+        eval_ = evaluate_draw(df, nodes=nodes, links=links, draw=draw)
+        nodes, links = eval_.nodes, eval_.links
 
     # populate edges, nodes, and network
     return NetFrame(dataframe=df, nodes=nodes, links=links, **params)
