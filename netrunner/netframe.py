@@ -175,7 +175,7 @@ class NetFrame:
     def flush_network(self) -> None:
         """
         Flush network empty
-:
+
         """
 
         self.net = Graph()
