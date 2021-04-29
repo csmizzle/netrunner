@@ -11,6 +11,35 @@ class NodeMap:
     def __init__(self) -> None:
         self.map = dict()
 
+    @staticmethod
+    def update_node_map(node: tuple, node_map: dict):
+        """
+        Logic for indexing new nodes into a node map
+
+        :param node:
+        :param node_map:
+        :return:
+        """
+
+        if node[0] not in node_map.keys():
+
+            # add node if not present in current map
+            node_map.update({
+                node[0]: {
+                    'attributes': {},
+                    'source_col': [node[1]]
+                }
+            })
+
+        # if node present, check if the source matches current node
+        elif node[0] in node_map.keys():
+
+            if node[1] not in node_map[node[0]]['source_col']:
+                node_map[node[0]]['source_col'].append(node[1])
+
+            else:
+                print(f'Node {node} already created!')
+
     def update(self, nodes) -> None:
         """
         Create NodeMap
@@ -18,8 +47,8 @@ class NodeMap:
         :return:
         """
 
-        self.map = {node: {'attributes': {}}
-                    for node in nodes if node not in self.map.keys()}
+        for node in nodes:
+            self.update_node_map(node, self.map)
 
     def flush(self) -> None:
         """
@@ -45,7 +74,14 @@ class EdgeMap:
         :return:
         """
 
-        self.map = {edge: {'attributes': {}} for edge in edges}
+        self.map = {
+            (edge[0], edge[1]): {  # unpack source / target into map tuple
+                'attributes': {},
+                'source_col': edge[2],  # source column for updating and deleting
+                'target_col': edge[3]  # target column for updating and deleting
+            }
+            for edge in edges
+        }
 
     def flush(self) -> None:
         """

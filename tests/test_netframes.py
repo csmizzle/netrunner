@@ -72,13 +72,20 @@ def test_update_node_map_community():
         assert 'community' in nf.node_map.map[node]['attributes'].keys()
 
 
-def test_join():
-    initial_length = len(nf.node_map.map.keys())
-    nf.join_graph(nf2)
-    assert len(nf.node_map.map.keys()) > initial_length
-
-
 def test_join_all():
     initial_length = len(nf.frame)
     nf.join_all(nf2, left_on='Name', right_on='defender_king')
+    assert nf.node_columns == ['Name', 'Allegiances', 'name', 'attacker_king', 'defender_king']
+    assert nf.edge_columns == [('Name', 'Allegiances'), ('name', 'attacker_king'), ('name', 'defender_king')]
     assert len(nf.frame) > initial_length
+
+
+def test_apply_frame():
+    nf_new = nr.read_csv('../data/character-deaths.csv',
+                         nodes=['Name', 'Allegiances'],
+                         links=[('Name', 'Allegiances')])
+    nf_new.frame['Allegiances'] = nf_new.frame['Allegiances'].str.lower()
+    nf_new.frame['Name'] = nf_new.frame['Name'].str.lower()
+    nf_new.apply_dataframe()
+    for node in nf_new.net.nodes:
+        assert node.islower()

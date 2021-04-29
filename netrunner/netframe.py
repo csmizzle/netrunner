@@ -1,4 +1,6 @@
+from .utils import unpack_source_col
 from networkx import Graph
+from networkx.readwrite import json_graph
 from networkx.classes.reportviews import DegreeView
 from netrunner.models import NodeMap, EdgeMap
 from typing import List, Tuple, Iterable
@@ -11,9 +13,6 @@ class NetFrame:
     def __init__(self, dataframe: DataFrame, nodes: List[str] = None,
                  links: List[tuple] = None, ignore_chars: str = None):
 
-        # TODO: add edge map updates
-        # TODO: update json output based on attributes
-        # TODO: edge attributes
         # TODO: Delete nodes and edges
         # TODO: if dataframe changes, give ability to propagate changes to network
 
@@ -21,8 +20,8 @@ class NetFrame:
         self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
-        self._node_columns = list()
-        self._edges = list()
+        self.node_columns = list()
+        self.edge_columns = list()
 
         # parse optional input params and create network if both present
         if nodes:
@@ -34,14 +33,15 @@ class NetFrame:
         if nodes and links:
             self.populate_network()
 
+    # Node/Edge Operations
     @staticmethod
-    def _get_values(dataframe, col_name: str, ignore_chars: str) -> list:
+    def _get_nodes(dataframe, col_name: str, ignore_chars: str) -> List[Tuple]:
 
         if ignore_chars:
-            nodes = list(set([node for node in list(dataframe[col_name]) if str(node) != ignore_chars]))
+            nodes = list(set([(node, col_name) for node in list(dataframe[col_name]) if str(node) != ignore_chars]))
 
         else:
-            nodes = list(set([node for node in list(dataframe[col_name])]))
+            nodes = list(set([(node, col_name) for node in list(dataframe[col_name])]))
 
         return nodes
 
@@ -57,12 +57,13 @@ class NetFrame:
         all_nodes = list()
 
         for col in cols:
-
-            nodes = self._get_values(self.frame, col, ignore_chars)
+            nodes = self._get_nodes(self.frame, col, ignore_chars)
 
             # update node cols and create list of nodes for network
-            self._node_columns.append(col)
             all_nodes.extend(nodes)
+
+            if col not in self.node_columns:
+                self.node_columns.append(col)
 
         return all_nodes
 
@@ -79,14 +80,22 @@ class NetFrame:
         """
 
         if ignore_str:
+
+            source_data = dataframe[dataframe[source_col] != ignore_str][source_col]
+            target_data = dataframe[dataframe[target_col] != ignore_str][target_col]
+
             return list(zip(
-                list(dataframe[dataframe[source_col] != ignore_str][source_col]),
-                list(dataframe[dataframe[target_col] != ignore_str][target_col])
+                list(source_data),
+                list(target_data),
+                list(source_col)*len(source_data),
+                list(target_col)*len(target_data)
             ))
 
         return list(zip(
             list(dataframe[source_col]),
-            list(dataframe[target_col])
+            list(dataframe[target_col]),
+            [source_col] * len(dataframe[source_col]),
+            [target_col] * len(dataframe[target_col])
         ))
 
     def add_nodes(self, cols: list, ignore_chars: str = None) -> None:
@@ -120,8 +129,10 @@ class NetFrame:
             edges = self._get_edges(self.frame, col[0], col[1], ignore_chars)
 
             # update edges map and edges for network
-            self._edges.append(col)
             all_edges.extend(edges)
+
+            if col not in self.edge_columns:
+                self.edge_columns.append(col)
 
         return all_edges
 
@@ -138,36 +149,17 @@ class NetFrame:
         if len(edges) > 0:
             self.edge_map.update(edges)
 
-    def to_json(self) -> dict:
+    def delete_node(self, node: str) -> None:
         """
-        merge links and edges
+        Delete node by name in Net
 
-        :return: dict
+        :param node: str
+            node label
         """
 
-        nodes = dict()
-        format_nodes = list()
-        edges = dict()
-        links = list()
+        pass
 
-        for node in self.node_map.map.keys():
-            entry = dict(id=node, group=1)
-            format_nodes.append(entry)
-
-        nodes.update({
-            'nodes': format_nodes
-        })
-
-        for edge in self.edge_map.map.keys():
-            entry = dict(source=edge[0], target=edge[1], value=1)
-            links.append(entry)
-
-        edges.update({
-            'links': links
-        })
-
-        return {**nodes, **edges}
-
+    # Network Operations
     def populate_network(self) -> None:
         """
         Create NetworkX Graph from Node and Edge Maps
@@ -179,6 +171,14 @@ class NetFrame:
         edges = [(edge[0], edge[1]) for edge in self.edge_map.map.keys()]
         self.net.add_nodes_from(nodes)
         self.net.add_edges_from(edges)
+
+    def flush_network(self) -> None:
+        """
+        Flush network empty
+:
+        """
+
+        self.net = Graph()
 
     def update_node_map(self, values: Iterable, type_: str) -> None:
         """
@@ -216,6 +216,15 @@ class NetFrame:
                             type_: idx
                         })
 
+    def to_json(self) -> dict:
+        """
+        Test networkx json implementation
+
+        :return: dict
+        """
+
+        return json_graph.node_link_data(self.net)
+
     def join_graph(self, netframe) -> None:
         """
         Join two NetFrames together into current NetFrame
@@ -224,9 +233,29 @@ class NetFrame:
 
         """
 
-        # join graphs and flush stats based on old net
-        nodes = set(list(netframe.node_map.map.keys()) + list(self.node_map.map.keys()))
-        edges = list(netframe.edge_map.map.keys()) + list(self.edge_map.map.keys())
+        # list of nodes to pass to graph
+        nodes = list()
+
+        for node in netframe.node_map.map.keys():
+            nodes.extend(unpack_source_col(node, netframe.node_map.map))
+
+        for node in self.node_map.map.keys():
+            nodes.extend(unpack_source_col(node, self.node_map.map))
+
+        nodes = set(nodes)
+
+        # list of edges to pass to new graph
+        edges = list()
+
+        for edge in netframe.edge_map.map.keys():
+            edges.append((edge[0], edge[1],
+                          netframe.edge_map.map[(edge[0], edge[1])]['source_col'],
+                          netframe.edge_map.map[(edge[0], edge[1])]['target_col']))
+
+        for edge in self.edge_map.map.keys():
+            edges.append((edge[0], edge[1],
+                          self.edge_map.map[(edge[0], edge[1])]['source_col'],
+                          self.edge_map.map[(edge[0], edge[1])]['target_col']))
 
         # flush and update nodes and edges
         self.node_map.flush()
@@ -234,12 +263,16 @@ class NetFrame:
         self.edge_map.flush()
         self.edge_map.update(edges)
 
+        # join meta data mappings
+        self.node_columns.extend(netframe.node_columns)
+        self.edge_columns.extend(netframe.edge_columns)
+
         # repopulate network
         self.populate_network()
 
     def join_all(self, netframe, left_on: str, right_on: str,  how: str = 'left') -> None:
         """
-        Join both graph and dataframe together on single column
+        Join both graph and dataframe together on single column, left join outward from NetFrame
 
         :param netframe: NetFrame
         :param left_on: str
@@ -247,5 +280,23 @@ class NetFrame:
         :param how: str
         """
 
+        # TODO: revisit this
+
         self.frame = pd.merge(left=self.frame, right=netframe.frame, left_on=left_on, right_on=right_on, how=how)
         self.join_graph(netframe)
+
+    def apply_dataframe(self) -> None:
+        """
+        Apply frame changes to net
+
+        """
+
+        # flush maps and network
+        self.node_map.flush()
+        self.edge_map.flush()
+        self.flush_network()
+
+        # apply new changes from frame to net
+        self.add_nodes(self.node_columns)
+        self.add_edges(self.edge_columns)
+        self.populate_network()
