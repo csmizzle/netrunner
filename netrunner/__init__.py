@@ -28,7 +28,7 @@ def run(df: DataFrame,
 
     # user input if None for nodes and edges
     # display info about dataframe
-    draw = params.pop('draw', None)
+    draw = params.pop('draw', False)
 
     if not nodes or not links:
 

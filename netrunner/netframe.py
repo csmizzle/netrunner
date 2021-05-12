@@ -11,10 +11,12 @@ from pandas.core.frame import DataFrame
 class NetFrame:
 
     def __init__(self, dataframe: DataFrame, nodes: List[str] = None,
-                 links: List[tuple] = None, ignore_chars: str = None):
+                 links: List[tuple] = None, ignore_chars: str = None,
+                 node_attributes: dict = None):
 
         # TODO: Delete nodes and edges
         # TODO: if dataframe changes, give ability to propagate changes to network
+        # TODO: node attributes
 
         self.frame = dataframe.fillna('None')
         self.net = Graph()
@@ -29,6 +31,9 @@ class NetFrame:
 
         if links:
             self.add_edges(cols=links, ignore_chars=ignore_chars)
+
+        if node_attributes:
+            self.set_node_attributes(node_attributes)
 
         if nodes and links:
             self.populate_network()
@@ -47,7 +52,7 @@ class NetFrame:
 
     def _create_nodes(self, cols: list, ignore_chars: str) -> list:
         """
-        Iterate and creat all nodes given column names
+        Iterate and create all nodes given column names
 
         :param cols: list
         :param ignore_chars: str
@@ -114,13 +119,69 @@ class NetFrame:
             # set nodes in map
             self.node_map.update(nodes)
 
+    def _get_node_attributes(self, col: str, attributes: list) -> dict:
+        """
+        Create attribute mapping for a given node attribute
+
+        :param col:
+        :param attributes:
+        :return:
+        """
+
+        attribute_map = {col: dict()}
+
+        # map each attribute to node value
+        # {col_value: {col_name: value, col_name: value, ...}}
+        for idx, row in self.frame.iterrows():
+
+            attribute_map[col].update({
+                row[col]: {attribute: row[attribute] for attribute in attributes}
+            })
+
+        return attribute_map
+
+    def _create_node_attributes(self, node_attributes: dict) -> dict:
+        """
+        Add specified attributes attributes to nodes
+
+        :param node_attributes:
+        :return: dict
+        """
+
+        attribute_map = dict()
+
+        for col, attributes in node_attributes.items():
+
+            attribute_map.update(self._get_node_attributes(col, attributes))
+
+        return attribute_map
+
+    def set_node_attributes(self, node_attributes: dict) -> None:
+        """
+        Set node attributes in NodeMap
+
+        :param node_attributes:
+        """
+
+        node_attribute_map = self._create_node_attributes(node_attributes)
+
+        for col in node_attribute_map.keys():
+
+            if col in self.node_columns:
+
+                for node in node_attribute_map[col]:
+
+                    if node in self.node_map.map.keys():
+
+                        self.node_map.map[node]['attributes'].update(node_attribute_map[col][node])
+
     def _create_edges(self, cols: List[Tuple], ignore_chars: str = None) -> list:
         """
         format edges
 
         :param cols:
         :param ignore_chars:
-        :return:
+        :return: list
         """
 
         all_edges = list()
@@ -167,7 +228,7 @@ class NetFrame:
         :return:
         """
 
-        nodes = [node for node in self.node_map.map.keys()]
+        nodes = [(node, self.node_map.map[node]['attributes']) for node in self.node_map.map.keys()]
         edges = [(edge[0], edge[1]) for edge in self.edge_map.map.keys()]
         self.net.add_nodes_from(nodes)
         self.net.add_edges_from(edges)

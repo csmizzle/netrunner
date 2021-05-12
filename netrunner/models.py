@@ -3,6 +3,7 @@ Custom models for NetFrames
 
 """
 from collections import namedtuple
+from typing import Iterable
 
 
 # NetFrame Models
@@ -40,7 +41,7 @@ class NodeMap:
             else:
                 print(f'Node {node} already created!')
 
-    def update(self, nodes) -> None:
+    def update(self, nodes: Iterable) -> None:
         """
         Create NodeMap
 

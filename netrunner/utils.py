@@ -9,7 +9,7 @@ from typing import List, Tuple
 
 
 # small wrapper for draw argument -- will be helpful when UI is created
-def evaluate_draw(df: DataFrame, nodes=None, links=None, draw=None) -> DrawResults:
+def evaluate_draw(df: DataFrame, nodes: list = None, links: list = None, draw: bool = None) -> DrawResults:
     """
     Evaluate draw parameter
 
@@ -20,19 +20,21 @@ def evaluate_draw(df: DataFrame, nodes=None, links=None, draw=None) -> DrawResul
     :return:
     """
 
+    # TODO: Add attribute mappings as well
+
     # evaluate user input on network creation
     if not draw:
         answer = input('Do you wish to format your network now? Y/N ')
 
     else:
 
-        if draw == 'y':
-            answer = 'y'
+        if draw is True:
+            answer = True
 
         else:
-            answer = 'n'
+            answer = False
 
-    if answer.lower() == 'y':
+    if answer is True:
 
         if not nodes:
             print("[*] Let's select which columns you want to use as nodes first ...")

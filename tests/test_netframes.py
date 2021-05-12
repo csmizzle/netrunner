@@ -1,17 +1,25 @@
+import pandas as pd
+
 import netrunner as nr
 from netrunner.models import NodeMap, EdgeMap
+from netrunner.netframe import NetFrame
 import networkx
 from networkx import Graph
 from networkx.algorithms import community
 
 # set up test networks
-nf = nr.read_csv('../data/character-deaths.csv',
-                 nodes=['Name', 'Allegiances'],
-                 links=[('Name', 'Allegiances')])
+path = '../data/character-deaths.csv'
+df_deaths = pd.read_csv(path)
+path_battles = '../data/battles.csv'
+df_battles = pd.read_csv(path_battles)
 
-nf2 = nr.read_csv('../data/battles.csv',
-                  nodes=['name', 'attacker_king', 'defender_king'],
-                  links=[('name', 'attacker_king'), ('name', 'defender_king')])
+nf = nr.run(df_deaths,
+            nodes=['Name', 'Allegiances'],
+            links=[('Name', 'Allegiances')])
+
+nf2 = nr.run(df_battles,
+             nodes=['name', 'attacker_king', 'defender_king'],
+             links=[('name', 'attacker_king'), ('name', 'defender_king')])
 
 
 def test_node_parsing():
@@ -81,11 +89,24 @@ def test_join_all():
 
 
 def test_apply_frame():
-    nf_new = nr.read_csv('../data/character-deaths.csv',
-                         nodes=['Name', 'Allegiances'],
-                         links=[('Name', 'Allegiances')])
+    nf_new = nr.run(df_deaths,
+                    nodes=['Name', 'Allegiances'],
+                    links=[('Name', 'Allegiances')])
     nf_new.frame['Allegiances'] = nf_new.frame['Allegiances'].str.lower()
     nf_new.frame['Name'] = nf_new.frame['Name'].str.lower()
     nf_new.apply_dataframe()
     for node in nf_new.net.nodes:
         assert node.islower()
+
+
+def test_node_attributes():
+    df = pd.read_csv('../data/battles.csv')
+    netframe = NetFrame(df)
+    nodes_cols = ['name', 'attacker_king']
+    cols_to_edges = [('name', 'attacker_king')]
+    node_attributes = {'name': ['year', 'region'], 'attacker_king': ['attacker_1']}
+    netframe.add_nodes(nodes_cols)
+    netframe.add_edges(cols_to_edges)
+    netframe.set_node_attributes(node_attributes)
+    for n in netframe.net.nodes:
+        assert len(netframe.net.nodes[n]) > 0
