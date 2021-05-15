@@ -6,6 +6,10 @@ from collections import namedtuple
 from typing import Iterable
 
 
+# Node object
+Node = namedtuple('Node', ['name', 'attributes', 'source_col'])
+
+
 # NetFrame Models
 class NodeMap:
 
@@ -13,7 +17,7 @@ class NodeMap:
         self.map = dict()
 
     @staticmethod
-    def update_node_map(node: tuple, node_map: dict):
+    def update_node_map(node: Node, node_map: dict):
         """
         Logic for indexing new nodes into a node map
 
@@ -22,26 +26,37 @@ class NodeMap:
         :return:
         """
 
-        if node[0] not in node_map.keys():
+        if node.name not in node_map.keys():
 
-            # add node if not present in current map
-            node_map.update({
-                node[0]: {
-                    'attributes': {},
-                    'source_col': [node[1]]
-                }
-            })
+            # check if attributes are present
+            if node.attributes:
+                # add node if not present in current map
+                node_map.update({
+                    node.name: {
+                        'attributes': node.attributes,
+                        'source_col': [node.source_col]
+                    }
+                })
+
+            # if attributes are net present, we want an empty dict to hold place ready for data
+            else:
+                node_map.update({
+                    node.name: {
+                        'attributes': dict(),
+                        'source_col': [node.source_col]
+                    }
+                })
 
         # if node present, check if the source matches current node
-        elif node[0] in node_map.keys():
+        elif node.name in node_map.keys():
 
-            if node[1] not in node_map[node[0]]['source_col']:
-                node_map[node[0]]['source_col'].append(node[1])
+            if node.source_col not in node_map[node.name]['source_col']:
+                node_map[node.name]['source_col'].append(node.source_col)
 
             else:
-                print(f'Node {node} already created!')
+                print(f'Node {node.name} already created!')
 
-    def update(self, nodes: Iterable) -> None:
+    def update(self, nodes: Iterable[Node]) -> None:
         """
         Create NodeMap
 

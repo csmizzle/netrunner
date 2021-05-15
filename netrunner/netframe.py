@@ -2,7 +2,7 @@ from .utils import unpack_source_col
 from networkx import Graph
 from networkx.readwrite import json_graph
 from networkx.classes.reportviews import DegreeView
-from netrunner.models import NodeMap, EdgeMap
+from netrunner.models import NodeMap, EdgeMap, Node
 from typing import List, Tuple, Iterable
 import pandas as pd
 from pandas.core.frame import DataFrame
@@ -15,15 +15,16 @@ class NetFrame:
                  node_attributes: dict = None):
 
         # TODO: Delete nodes and edges
-        # TODO: if dataframe changes, give ability to propagate changes to network
-        # TODO: node attributes
+        # TODO: node attributes carry over into joins
+        # TODO: Add apply_map
 
-        self.frame = dataframe.fillna('None')
+        self.frame = dataframe.fillna('None')  # revisit this, placeholder for continued development
         self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
         self.node_columns = list()
         self.edge_columns = list()
+        self.node_attributes_map = node_attributes
 
         # parse optional input params and create network if both present
         if nodes:
@@ -43,10 +44,13 @@ class NetFrame:
     def _get_nodes(dataframe, col_name: str, ignore_chars: str) -> List[Tuple]:
 
         if ignore_chars:
-            nodes = list(set([(node, col_name) for node in list(dataframe[col_name]) if str(node) != ignore_chars]))
+            nodes = list(set([Node(name=node, attributes=None, source_col=col_name)
+                              for node in list(dataframe[col_name])
+                              if str(node) != ignore_chars]))
 
         else:
-            nodes = list(set([(node, col_name) for node in list(dataframe[col_name])]))
+            nodes = list(set([Node(name=node, attributes=None, source_col=col_name)
+                              for node in list(dataframe[col_name])]))
 
         return nodes
 
@@ -303,7 +307,7 @@ class NetFrame:
         for node in self.node_map.map.keys():
             nodes.extend(unpack_source_col(node, self.node_map.map))
 
-        nodes = set(nodes)
+        # nodes = set(nodes)
 
         # list of edges to pass to new graph
         edges = list()
@@ -323,6 +327,9 @@ class NetFrame:
         self.node_map.update(nodes)
         self.edge_map.flush()
         self.edge_map.update(edges)
+
+        print('Self Node Attributes:', self.node_attributes_map)
+        print('Joining Node Attributes:', netframe.node_attributes_map)
 
         # join meta data mappings
         self.node_columns.extend(netframe.node_columns)
@@ -361,3 +368,13 @@ class NetFrame:
         self.add_nodes(self.node_columns)
         self.add_edges(self.edge_columns)
         self.populate_network()
+
+    def apply_map(self):
+        """
+
+
+        :return:
+        """
+
+        return NetFrame(self.frame, nodes=self.node_columns,
+                        links=self.edge_columns, node_attributes=self.node_attributes_map)

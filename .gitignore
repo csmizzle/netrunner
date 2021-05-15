@@ -1,5 +1,4 @@
-/run_readers.py
-/run_algos.py
+/run*.py
 *cache*
 /data
 /notebooks

@@ -7,6 +7,8 @@ Netrunner allows you to quickly construct complex, multi-relational networks fro
 
 ---
 
+### Usage
+
 There are several ways to interact with `netrunner`. By using the columnar data from DataFrame,
 we can seamlessly construct complex networks.
 We will start with the `run` functionality.
@@ -17,8 +19,6 @@ import netrunner
 df = pd.read_csv('path_to_data')
 nf = netrunner.run(df, draw=True)
 ```
-
-### Usage
 
 By passing a dataframe to the `run` function with `draw=True`,
 the user will be prompted with a simple guide to constructing a NetFrame.

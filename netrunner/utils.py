@@ -3,7 +3,7 @@ Utility functions for Netrunner
 
 """
 
-from netrunner.models import DrawResults
+from netrunner.models import DrawResults, Node
 from pandas.core.frame import DataFrame
 from typing import List, Tuple
 
@@ -19,8 +19,6 @@ def evaluate_draw(df: DataFrame, nodes: list = None, links: list = None, draw: b
     :param draw:
     :return:
     """
-
-    # TODO: Add attribute mappings as well
 
     # evaluate user input on network creation
     if not draw:
@@ -54,7 +52,7 @@ def evaluate_draw(df: DataFrame, nodes: list = None, links: list = None, draw: b
 
 
 # unpack source columns from NodeMap
-def unpack_source_col(node, node_map) -> List[Tuple]:
+def unpack_source_col(node: Node, node_map) -> List[Node]:
     """
     Unpack listed values from source_col in NodeMap.map
 
@@ -64,7 +62,11 @@ def unpack_source_col(node, node_map) -> List[Tuple]:
     """
 
     if len(node_map[node]['source_col']) == 1:
-        return [(node, node_map[node]['source_col'][0])]
+        return [Node(name=node,
+                     attributes=node_map[node]['attributes'],
+                     source_col=node_map[node]['source_col'][0])]
 
     elif len(node_map[node]['source_col']) > 1:
-        return [(node, col) for col in node_map[node]['source_col']]
+        return [Node(name=node,
+                     attributes=node_map[node]['attributes'],
+                     source_col=col) for col in node_map[node]['source_col']]
