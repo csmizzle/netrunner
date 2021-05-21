@@ -2,7 +2,7 @@ from .utils import unpack_source_col
 from networkx import Graph
 from networkx.readwrite import json_graph
 from networkx.classes.reportviews import DegreeView
-from netrunner.models import NodeMap, EdgeMap, Node
+from netrunner.models import NodeMap, EdgeMap, Node, Edge
 from typing import List, Tuple, Iterable
 import pandas as pd
 from pandas.core.frame import DataFrame
@@ -16,6 +16,9 @@ class NetFrame:
 
         # TODO: Delete nodes and edges
         # TODO: node attributes carry over into joins
+        # TODO: Edge attributes
+        #       - This probably looks a lot like node_attributes
+        #       - Will add issue on GitHub
         # TODO: Add apply_map
 
         self.frame = dataframe.fillna('None')  # revisit this, placeholder for continued development
@@ -39,7 +42,7 @@ class NetFrame:
         if nodes and links:
             self.populate_network()
 
-    # Node/Edge Operations
+    # Node Operations
     @staticmethod
     def _get_nodes(dataframe, col_name: str, ignore_chars: str) -> List[Tuple]:
 
@@ -75,37 +78,6 @@ class NetFrame:
                 self.node_columns.append(col)
 
         return all_nodes
-
-    @staticmethod
-    def _get_edges(dataframe: DataFrame, target_col: str, source_col: str, ignore_str: str = None) -> list:
-        """
-        Get relationships
-
-        :param dataframe: DataFrame
-        :param target_col: str
-        :param source_col: str
-        :param ignore_str: str
-        :return: list
-        """
-
-        if ignore_str:
-
-            source_data = dataframe[dataframe[source_col] != ignore_str][source_col]
-            target_data = dataframe[dataframe[target_col] != ignore_str][target_col]
-
-            return list(zip(
-                list(source_data),
-                list(target_data),
-                list(source_col)*len(source_data),
-                list(target_col)*len(target_data)
-            ))
-
-        return list(zip(
-            list(dataframe[source_col]),
-            list(dataframe[target_col]),
-            [source_col] * len(dataframe[source_col]),
-            [target_col] * len(dataframe[target_col])
-        ))
 
     def add_nodes(self, cols: list, ignore_chars: str = None) -> None:
         """
@@ -179,6 +151,80 @@ class NetFrame:
 
                         self.node_map.map[node]['attributes'].update(node_attribute_map[col][node])
 
+    def update_node_map(self, values: Iterable, type_: str) -> None:
+        """
+        set new values for nodes
+
+        :param values: Iterable
+        :param type_: str
+        """
+
+        if isinstance(values, DegreeView):
+
+            for value in values:
+
+                self.node_map.map[value[0]]['attributes'].update({
+                    type_: value[1]
+                })
+
+        if isinstance(values, dict):
+
+            for key, value in values.items():
+                self.node_map.map[key]['attributes'].update({
+                    type_: value
+                })
+
+        if isinstance(values, list):
+
+            # communities come back in frozen sets in networkX
+            for idx, value in enumerate(values):
+
+                if isinstance(value, frozenset):
+
+                    for entity in value:
+
+                        self.node_map.map[entity]['attributes'].update({
+                            type_: idx
+                        })
+
+    # Edge Operations
+    @staticmethod
+    def _get_edges(dataframe: DataFrame, target_col: str, source_col: str, ignore_str: str = None) -> list:
+        """
+        Get relationships
+
+        :param dataframe: DataFrame
+        :param target_col: str
+        :param source_col: str
+        :param ignore_str: str
+        :return: list
+        """
+
+        if ignore_str:
+
+            source_data = dataframe[dataframe[source_col] != ignore_str][source_col]
+            target_data = dataframe[dataframe[target_col] != ignore_str][target_col]
+
+            return [
+                Edge(
+                    name=(source, target),
+                    attributes=None,
+                    source_col=source_col,
+                    target_col=target_col
+                )
+                for source, target in zip(source_data, target_data)
+            ]
+
+        return [
+            Edge(
+                name=(source, target),
+                attributes=None,
+                source_col=source_col,
+                target_col=target_col
+            )
+            for source, target in zip(dataframe[source_col], dataframe[target_col])
+        ]
+
     def _create_edges(self, cols: List[Tuple], ignore_chars: str = None) -> list:
         """
         format edges
@@ -192,6 +238,7 @@ class NetFrame:
 
         for col in cols:
             edges = self._get_edges(self.frame, col[0], col[1], ignore_chars)
+            print('Edges:', edges)
 
             # update edges map and edges for network
             all_edges.extend(edges)
@@ -245,42 +292,6 @@ class NetFrame:
 
         self.net = Graph()
 
-    def update_node_map(self, values: Iterable, type_: str) -> None:
-        """
-        set new values for nodes
-
-        :param values: Iterable
-        :param type_: str
-        """
-
-        if isinstance(values, DegreeView):
-
-            for value in values:
-
-                self.node_map.map[value[0]]['attributes'].update({
-                    type_: value[1]
-                })
-
-        if isinstance(values, dict):
-
-            for key, value in values.items():
-                self.node_map.map[key]['attributes'].update({
-                    type_: value
-                })
-
-        if isinstance(values, list):
-
-            # communities come back in frozen sets in networkX
-            for idx, value in enumerate(values):
-
-                if isinstance(value, frozenset):
-
-                    for entity in value:
-
-                        self.node_map.map[entity]['attributes'].update({
-                            type_: idx
-                        })
-
     def to_json(self) -> dict:
         """
         Test networkx json implementation
@@ -313,14 +324,16 @@ class NetFrame:
         edges = list()
 
         for edge in netframe.edge_map.map.keys():
-            edges.append((edge[0], edge[1],
-                          netframe.edge_map.map[(edge[0], edge[1])]['source_col'],
-                          netframe.edge_map.map[(edge[0], edge[1])]['target_col']))
+            edges.append(Edge(name=(edge[0], edge[1]),
+                              attributes=netframe.edge_map.map[(edge[0], edge[1])]['attributes'],
+                              source_col=netframe.edge_map.map[(edge[0], edge[1])]['source_col'],
+                              target_col=netframe.edge_map.map[(edge[0], edge[1])]['target_col']))
 
         for edge in self.edge_map.map.keys():
-            edges.append((edge[0], edge[1],
-                          self.edge_map.map[(edge[0], edge[1])]['source_col'],
-                          self.edge_map.map[(edge[0], edge[1])]['target_col']))
+            edges.append(Edge(name=(edge[0], edge[1]),
+                              attributes=self.edge_map.map[(edge[0], edge[1])]['attributes'],
+                              source_col=self.edge_map.map[(edge[0], edge[1])]['source_col'],
+                              target_col=self.edge_map.map[(edge[0], edge[1])]['target_col']))
 
         # flush and update nodes and edges
         self.node_map.flush()

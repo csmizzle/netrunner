@@ -9,6 +9,12 @@ from typing import Iterable
 # Node object
 Node = namedtuple('Node', ['name', 'attributes', 'source_col'])
 
+# Edge object
+Edge = namedtuple('Edge', ['name', 'attributes', 'source_col', 'target_col'])
+
+# Utility Models
+DrawResults = namedtuple('DrawResults', ['nodes', 'links'])
+
 
 # NetFrame Models
 class NodeMap:
@@ -83,21 +89,43 @@ class EdgeMap:
         # - this can be done with lists under the source/target key
         self.map = dict()
 
-    def update(self, edges) -> None:
+    @staticmethod
+    def update_edge_map(edge, edge_map: dict) -> None:
         """
         Create NodeMap
 
         :return:
         """
 
-        self.map = {
-            (edge[0], edge[1]): {  # unpack source / target into map tuple
-                'attributes': {},
-                'source_col': edge[2],  # source column for updating and deleting
-                'target_col': edge[3]  # target column for updating and deleting
-            }
-            for edge in edges
-        }
+        if edge.name not in edge_map.keys():
+            # check if edge attributes are present
+            if edge.attributes:
+
+                edge_map.update({
+                    edge.name : {
+                        'attributes': edge.attributes,
+                        'source_col': edge.source_col,
+                        'target_col': edge.target_col
+                    }
+                })
+
+            else:
+                edge_map.update({
+                    edge.name : {
+                        'attributes': dict(),
+                        'source_col': edge.source_col,
+                        'target_col': edge.target_col
+                    }
+                })
+
+    def update(self, edges: Iterable[Edge]):
+        """
+
+        :return:
+        """
+
+        for edge in edges:
+            self.update_edge_map(edge, self.map)
 
     def flush(self) -> None:
         """
@@ -106,7 +134,3 @@ class EdgeMap:
         """
 
         self.map = dict()
-
-
-# Utility Models
-DrawResults = namedtuple('DrawResults', ['nodes', 'links'])
