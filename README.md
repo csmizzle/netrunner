@@ -2,7 +2,7 @@
 let's run on some networks
 
 ---
-NetFrames will be a very important piece of netrunner, giving upstream access to the flexibility of Pandas DataFrames and the downstream power to NetworkX Graph analytics in a concise API.
+NetFrames are essential to netrunner, giving upstream access to the flexibility of Pandas DataFrames and the downstream power to NetworkX Graph analytics in a concise API.
 Netrunner allows you to quickly construct complex, multi-relational networks from columnar data.
 
 ---
