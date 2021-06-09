@@ -1,4 +1,4 @@
-from .utils import unpack_source_col
+from netrunner.utils import unpack_source_col
 from networkx import Graph
 from networkx.readwrite import json_graph
 from networkx.classes.reportviews import DegreeView
@@ -12,7 +12,7 @@ class NetFrame:
 
     def __init__(self, dataframe: DataFrame, nodes: List[str] = None,
                  links: List[tuple] = None, ignore_chars: str = None,
-                 node_attributes: dict = None):
+                 node_attributes: dict = None, edge_attributes: dict = None):
 
         # TODO: Delete nodes and edges
         # TODO: node attributes carry over into joins
@@ -20,14 +20,16 @@ class NetFrame:
         #       - This probably looks a lot like node_attributes
         #       - Will add issue on GitHub
         # TODO: Add apply_map
+        # TODO: Make the fillna() smarter, allow for ignored characters
 
-        self.frame = dataframe.fillna('None')  # revisit this, placeholder for continued development
+        self.frame = dataframe.fillna('None')  # revisit this, placeholder for continued development, this needs to go
         self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
         self.node_columns = list()
         self.edge_columns = list()
         self.node_attributes_map = node_attributes
+        self.edge_attributes_map = edge_attributes
 
         # parse optional input params and create network if both present
         if nodes:
@@ -38,6 +40,9 @@ class NetFrame:
 
         if node_attributes:
             self.set_node_attributes(node_attributes)
+
+        if edge_attributes:
+            self.set_edge_attributes(edge_attributes)
 
         if nodes and links:
             self.populate_network()
@@ -97,7 +102,7 @@ class NetFrame:
 
     def _get_node_attributes(self, col: str, attributes: list) -> dict:
         """
-        Create attribute mapping for a given node attribute
+        Create attribute mapping for a given node
 
         :param col:
         :param attributes:
@@ -113,6 +118,8 @@ class NetFrame:
             attribute_map[col].update({
                 row[col]: {attribute: row[attribute] for attribute in attributes}
             })
+
+        print(f'Node Map {attribute_map}')
 
         return attribute_map
 
@@ -261,6 +268,65 @@ class NetFrame:
         if len(edges) > 0:
             self.edge_map.update(edges)
 
+    def _get_edge_attributes(self, link, attributes):
+        """
+        Collect and unpack link and corresponding attributes
+
+        :param link:
+        :param attributes:
+        :return:
+        """
+
+        print(f'creating attribute for {link}')
+        print(f'Attribute {attributes}')
+        attribute_map = {link: dict()}
+
+        # map each attribute to edge value
+        for idx, row in self.frame.iterrows():
+
+            attribute_map[link].update({
+
+                # reverse tuple since it gets ordered???
+                (row[link[1]], row[link[0]]): {attribute: row[attribute] for attribute in attributes}
+            })
+
+        print(f'Att Map {attribute_map}')
+        return attribute_map
+
+    def _create_edge_attributes(self, edge_attributes: dict) -> dict:
+        """
+        Add specified attributes attributes to nodes
+
+        :param edge_attributes:
+        :return: dict
+        """
+
+        attribute_map = dict()
+
+        for link, attributes in edge_attributes.items():
+            attribute_map.update(self._get_edge_attributes(link, attributes))
+
+        return attribute_map
+
+    def set_edge_attributes(self, edge_attributes: dict) -> None:
+        """
+        Set node attributes in NodeMap
+
+        :param edge_attributes:
+        """
+
+        edge_attribute_map = self._create_edge_attributes(edge_attributes)
+
+        for col in edge_attribute_map.keys():
+
+            if col in self.edge_columns:
+
+                for edge in edge_attribute_map[col]:
+
+                    if edge in self.edge_map.map.keys():
+
+                        self.edge_map.map[edge]['attributes'].update(edge_attribute_map[col][edge])
+
     def delete_node(self, node: str) -> None:
         """
         Delete node by name in Net
@@ -317,8 +383,6 @@ class NetFrame:
 
         for node in self.node_map.map.keys():
             nodes.extend(unpack_source_col(node, self.node_map.map))
-
-        # nodes = set(nodes)
 
         # list of edges to pass to new graph
         edges = list()
@@ -390,4 +454,5 @@ class NetFrame:
         """
 
         return NetFrame(self.frame, nodes=self.node_columns,
-                        links=self.edge_columns, node_attributes=self.node_attributes_map)
+                        links=self.edge_columns, node_attributes=self.node_attributes_map,
+                        edge_attributes=self.edge_attributes_map)
