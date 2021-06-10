@@ -18,7 +18,7 @@ class NetFrame:
                  links: List[tuple] = None, ignore_chars: str = None,
                  node_attributes: dict = None, edge_attributes: dict = None):
 
-        self.frame = dataframe  # revisit this, placeholder for continued development, this needs to go
+        self.frame = dataframe
         self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
