@@ -9,6 +9,10 @@ from pandas.core.frame import DataFrame
 
 
 class NetFrame:
+    """
+    Easy to use Networkx and Pandas
+
+    """
 
     def __init__(self, dataframe: DataFrame, nodes: List[str] = None,
                  links: List[tuple] = None, ignore_chars: str = None,
