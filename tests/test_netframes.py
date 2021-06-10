@@ -109,4 +109,17 @@ def test_node_attributes():
     netframe.add_edges(cols_to_edges)
     netframe.set_node_attributes(node_attributes)
     for n in netframe.net.nodes:
-        assert len(netframe.net.nodes[n]) > 0
+        assert len(netframe.net.nodes[n]['attributes']) > 0
+
+
+def test_edge_attributes():
+    df = pd.read_csv('../data/battles.csv')
+    netframe = NetFrame(df)
+    nodes_cols = ['name', 'attacker_king']
+    cols_to_edges = [('name', 'attacker_king')]
+    edge_attributes = {('name', 'attacker_king'): ['attacker_outcome']}
+    netframe.add_nodes(nodes_cols)
+    netframe.add_edges(cols_to_edges)
+    netframe.set_edge_attributes(edge_attributes)
+    for e in netframe.net.edges:
+        assert len(netframe.net.edges[e]['attributes']) > 0
