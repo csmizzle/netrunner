@@ -18,15 +18,7 @@ class NetFrame:
                  links: List[tuple] = None, ignore_chars: str = None,
                  node_attributes: dict = None, edge_attributes: dict = None):
 
-        # TODO: Delete nodes and edges
-        # TODO: node attributes carry over into joins
-        # TODO: Edge attributes
-        #       - This probably looks a lot like node_attributes
-        #       - Will add issue on GitHub
-        # TODO: Add apply_map
-        # TODO: Make the fillna() smarter, allow for ignored characters
-
-        self.frame = dataframe.fillna('None')  # revisit this, placeholder for continued development, this needs to go
+        self.frame = dataframe  # revisit this, placeholder for continued development, this needs to go
         self.net = Graph()
         self.node_map = NodeMap()
         self.edge_map = EdgeMap()
@@ -62,7 +54,8 @@ class NetFrame:
 
         else:
             nodes = list(set([Node(name=node, attributes=None, source_col=col_name)
-                              for node in list(dataframe[col_name])]))
+                              for node in list(dataframe[col_name])
+                              if str(node) != 'nan']))
 
         return nodes
 
@@ -232,6 +225,7 @@ class NetFrame:
                 target_col=target_col
             )
             for source, target in zip(dataframe[source_col], dataframe[target_col])
+            if str(source) != 'nan' and str(target) != 'nan'
         ]
 
     def _create_edges(self, cols: List[Tuple], ignore_chars: str = None) -> list:
