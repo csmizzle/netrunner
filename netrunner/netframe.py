@@ -123,8 +123,6 @@ class NetFrame:
                 row[col]: {attribute: row[attribute] for attribute in attributes}
             })
 
-        print(f'Node Map {attribute_map}')
-
         return attribute_map
 
     def _create_node_attributes(self, node_attributes: dict) -> dict:
@@ -249,7 +247,6 @@ class NetFrame:
 
         for col in cols:
             edges = self._get_edges(self.frame, col[0], col[1], ignore_chars)
-            print('Edges:', edges)
 
             # update edges map and edges for network
             all_edges.extend(edges)
@@ -281,8 +278,6 @@ class NetFrame:
         :return:
         """
 
-        print(f'creating attribute for {link}')
-        print(f'Attribute {attributes}')
         attribute_map = {link: dict()}
 
         # map each attribute to edge value
@@ -294,7 +289,6 @@ class NetFrame:
                 (row[link[1]], row[link[0]]): {attribute: row[attribute] for attribute in attributes}
             })
 
-        print(f'Att Map {attribute_map}')
         return attribute_map
 
     def _create_edge_attributes(self, edge_attributes: dict) -> dict:
@@ -409,9 +403,6 @@ class NetFrame:
         self.edge_map.flush()
         self.edge_map.update(edges)
 
-        print('Self Node Attributes:', self.node_attributes_map)
-        print('Joining Node Attributes:', netframe.node_attributes_map)
-
         # join meta data mappings
         self.node_columns.extend(netframe.node_columns)
         self.edge_columns.extend(netframe.edge_columns)
@@ -452,11 +443,13 @@ class NetFrame:
 
     def apply_map(self):
         """
-
+        Apply map object stored within in NetFrame
 
         :return:
         """
 
-        return NetFrame(self.frame, nodes=self.node_columns,
-                        links=self.edge_columns, node_attributes=self.node_attributes_map,
+        return NetFrame(self.frame,
+                        nodes=self.node_columns,
+                        links=self.edge_columns,
+                        node_attributes=self.node_attributes_map,
                         edge_attributes=self.edge_attributes_map)
