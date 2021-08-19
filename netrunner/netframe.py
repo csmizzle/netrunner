@@ -83,7 +83,7 @@ class NetFrame:
 
     def add_nodes(self, cols: list, ignore_chars: str = None) -> None:
         """
-        format nodes for visualization
+        update nodes
 
         :param cols: list
         :param ignore_chars: str
