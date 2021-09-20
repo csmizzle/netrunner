@@ -14,7 +14,8 @@ from py2neo.bulk import create_nodes, create_relationships
 class NeoMapper:
     """
     Map NetFrame Nodes and Edges to Neo4j graph
-    TODO: Duplicates still being created, get rid of those
+    TODO: Duplicates still being created, get rid of those, maybe switch to merge?? Review LinkedKnowledge code
+    TODO: for merging
     """
 
     def __init__(self,
